@@ -4,9 +4,16 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import PoseStamped
+from styx_msgs.msg import Lane
+
 import math
 
+import tf
+
 from twist_controller import Controller
+from yaw_controller import YawController
+
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -46,6 +53,12 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.dbw_enabled = True
+        self.twist = None
+        self.waypoints = None
+        self.pose = None
+        self.velocity = None
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -55,8 +68,17 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = Controller(vehicle_mass, wheel_radius, accel_limit, decel_limit, max_steer_angle)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
 
-        # TODO: Subscribe to all the topics you need to
+
+    # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
+
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+        rospy.Subscriber('/dbw_enabled', PoseStamped, self.dbw_cb)
 
         self.loop()
 
@@ -72,6 +94,15 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
+            if self.velocity is not None and self.waypoints is not None and self.pose is not None and self.dbw_enabled:
+                throttle, brake, steer = self.controller.control(self.waypoints[0].twist.twist.linear.x,
+                                                                 self.velocity.linear.x, self.pose, self.waypoints,
+                                                                 self.twist)
+
+                steer += self.yaw_controller.get_steering(self.twist.linear.x, self.twist.angular.z,
+                                                          self.velocity.linear.x)
+                self.publish(throttle, brake, steer)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -91,6 +122,21 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+    def dbw_cb(self, message):
+        self.dbw_enabled = bool(message.data)
+
+    def twist_cb(self, message):
+        self.twist = message.twist
+
+    def velocity_cb(self, message):
+        self.velocity = message.twist
+
+    def pose_cb(self, message):
+        self.pose = message.pose
+
+    def waypoints_cb(self, message):
+        self.waypoints = message.waypoints
 
 
 if __name__ == '__main__':

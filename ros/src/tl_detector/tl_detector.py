@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -55,7 +56,7 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -90,7 +91,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, pose, waypoints):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -100,9 +101,20 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        # TODO implement
+        dist = float('inf')
+        index = 0
+        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+        for waypoint in waypoints:
+            temp_dist = dl(waypoint.pose.pose.position, pose.position)
+            if temp_dist < dist:
+                dist = temp_dist
+                index = index + 1
 
+            if waypoints[index].pose.pose.position.x < pose.position.x:
+                index = index + 1
+
+        return index
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
@@ -173,19 +185,57 @@ class TLDetector(object):
 
         """
         light = None
+        car_position = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        # if(self.pose and self.waypoints):
+        #    car_position = self.get_closest_waypoint(self.pose.pose, self.waypoints)
 
-        #TODO find the closest visible traffic light (if one exists)
+        # TODO find the closest visible traffic light (if one exists)
+        if car_position:
+            light_index = self.closest_traffic_light(car_position)
+            light = self.lights[light_index]
+            stop_line_position = stop_line_positions[light_index]
+            light_wp = self.closest_stop_line_position(stop_line_position)
 
         if light:
-            state = self.get_light_state(light)
+            # state = self.get_light_state(light)
+            state = light.state
             return light_wp, state
-        self.waypoints = None
+        # self.waypoints = None
         return -1, TrafficLight.UNKNOWN
+
+    def closest_stop_line_position(self, stop_line_position):
+        dist = float('inf')
+        index = 0
+        dl = lambda a, b: math.sqrt((a.x - b[0]) ** 2 + (a.y - b[1]) ** 2)
+        for waypoint in self.waypoints:
+            temp_dist = dl(waypoint.pose.pose.position, stop_line_position)
+            if temp_dist < dist:
+                dist = temp_dist
+                index = index + 1
+
+            if waypoints[index].pose.pose.position.x < stop_line_position[0]:
+                index = index + 1
+
+        return index
+
+    def closest_traffic_light(self, car_position):
+        dist = float('inf')
+        index = 0
+        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+        for light in self.lights:
+            temp_dist = dl(self.waypoints[car_position].pose.pose.position, light.pose.pose.position)
+            if temp_dist < dist:
+                dist = temp_dist
+                index = index + 1
+
+                # if self.waypoints[car_position].pose.pose.position.x > lights[index].pose.pose.position.x:
+                #   index = index + 1
+
+        return index
+
 
 if __name__ == '__main__':
     try:
