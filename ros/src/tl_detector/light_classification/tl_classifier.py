@@ -1,4 +1,6 @@
 from styx_msgs.msg import TrafficLight
+import cv2
+import numpy as np
 
 class TLClassifier(object):
     def __init__(self):
@@ -15,5 +17,49 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
+
+        def convert_color_space(image):
+            return cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+
+        def apply_color_mask(HSV_image, low, high):
+            mask =  cv2.inRange(HSV_image, low, high)
+            return mask, cv2.bitwise_and(image, image, mask=mask)
+
+        def get_area(mask):
+            return cv2.countNonZero(mask)
+
+        red_low = np.array([150, 150, 40])
+        red_high = np.array([180, 255, 255])
+
+        yellow_low = np.array([20, 150, 100])
+        yellow_high = np.array([40, 255, 255])
+
+        green_low = np.array([50, 100, 100])
+        green_high = np.array([70, 255, 255])
+
+        # Convert RBG to HSV
+        HSV_image = convert_color_space(image)
+
+        # Threshold the HSV image to get only red, yellow and green colors
+        # Bitwise-AND mask
+        red_mask, red_image = apply_color_mask(HSV_image, red_low, red_high)
+        red_area = get_area(red_mask)
+
+        yellow_mask, yellow_image = apply_color_mask(HSV_image, yellow_low, yellow_high)
+        yellow_area = get_area(yellow_mask)
+
+        green_mask, green_image = apply_color_mask(HSV_image, green_low, green_high)
+        green_area = get_area(green_mask)
+
+        #print(red_area, yellow_area, green_area)
+
+        if red_area > 180:
+            return TrafficLight.RED
+
+        if yellow_area > 180:
+            return TrafficLight.YELLOW
+
+        if green_area > 180:
+            return TrafficLight.GREEN
+
         return TrafficLight.UNKNOWN
