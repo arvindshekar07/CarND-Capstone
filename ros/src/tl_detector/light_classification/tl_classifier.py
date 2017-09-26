@@ -19,7 +19,7 @@ class TLClassifier(object):
         """
 
         def convert_color_space(image):
-            return cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+            return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         def apply_color_mask(HSV_image, low, high):
             mask =  cv2.inRange(HSV_image, low, high)
@@ -51,15 +51,18 @@ class TLClassifier(object):
         green_mask, green_image = apply_color_mask(HSV_image, green_low, green_high)
         green_area = get_area(green_mask)
 
-        #print(red_area, yellow_area, green_area)
+        print(red_area, yellow_area, green_area)
 
         if red_area > 180:
+            print ('red')
             return TrafficLight.RED
 
         if yellow_area > 180:
+            print ('yellow')
             return TrafficLight.YELLOW
 
         if green_area > 180:
+            print ('green')
             return TrafficLight.GREEN
 
         return TrafficLight.UNKNOWN

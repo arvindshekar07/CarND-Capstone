@@ -206,8 +206,8 @@ class TLDetector(object):
             light_wp = self.closest_stop_line_position(stop_line_position)
    
         if light:
-            #state = self.get_light_state(light)
-            state = light.state
+            state = self.get_light_state(light)
+            #state = light.state
             return light_wp, state
         return -1, TrafficLight.UNKNOWN
 
