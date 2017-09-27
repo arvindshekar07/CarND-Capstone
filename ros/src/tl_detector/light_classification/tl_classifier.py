@@ -28,6 +28,7 @@ class TLClassifier(object):
         def get_area(mask):
             return cv2.countNonZero(mask)
 
+        # simulator
         red_low = np.array([150, 150, 40])
         red_high = np.array([180, 255, 255])
 
@@ -36,6 +37,18 @@ class TLClassifier(object):
 
         green_low = np.array([50, 100, 100])
         green_high = np.array([70, 255, 255])
+
+        # environment
+        '''
+        red_low = np.array([18, 120, 40])
+        red_high = np.array([22, 255, 255])
+
+        yellow_low = np.array([28, 120, 100])
+        yellow_high = np.array([35, 255, 255])
+
+        green_low = np.array([70, 95, 100])
+        green_high = np.array([90, 255, 255])
+        '''
 
         # Convert RBG to HSV
         HSV_image = convert_color_space(image)
