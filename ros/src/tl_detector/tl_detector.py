@@ -13,6 +13,7 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 3
+LOOKAHEAD_WPS = 50
 
 class TLDetector(object):
     def __init__(self):
@@ -22,9 +23,11 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.car_position = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        sub9 = rospy.Subscriber('/car_position', Int32, self.car_position_cb)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -59,6 +62,9 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
 
+    def car_position_cb(self, msg):
+        self.car_position = msg.data
+		
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
@@ -107,16 +113,13 @@ class TLDetector(object):
         dist = float('inf')
         index = 0
         selected_index = None
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
         for waypoint in waypoints:
             temp_dist = dl(waypoint.pose.pose.position, pose.position)
             if temp_dist < dist:
                dist = temp_dist
                selected_index = index
             index = index + 1
-
-            if waypoints[selected_index].pose.pose.position.x < pose.position.x:
-               selected_index = selected_index + 1
   
         return selected_index
 
@@ -173,7 +176,7 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -190,7 +193,7 @@ class TLDetector(object):
 
         """
         light = None
-        car_position = None
+        #car_position = None
         light_index = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
@@ -204,9 +207,14 @@ class TLDetector(object):
             light = self.lights[light_index]
             stop_line_position = stop_line_positions[light_index]
             light_wp = self.closest_stop_line_position(stop_line_position)
+            #car_position = self.get_closest_waypoint(self.pose.pose, self.waypoints)			
+            #car_position = self.car_position
+
+            #print(str(light_wp) + " " + str(self.car_position))						
    
-        if light:
+        if light and light_wp >= self.car_position and light_wp <=self.car_position+LOOKAHEAD_WPS:
             state = self.get_light_state(light)
+            #print(state)
             #state = light.state
             return light_wp, state
         return -1, TrafficLight.UNKNOWN
@@ -223,8 +231,8 @@ class TLDetector(object):
                selected_index = index
             index = index + 1
 
-            if self.waypoints[selected_index].pose.pose.position.x < stop_line_position[0]:
-               selected_index = selected_index + 1
+         #   if self.waypoints[selected_index].pose.pose.position.x < stop_line_position[0]:
+         #      selected_index = selected_index + 1
   
         return selected_index		
 
@@ -232,10 +240,11 @@ class TLDetector(object):
         dist = float('inf')
         index = 0
         selected_index = None
-        dl = lambda a, b: a.x-b.x
+        #dl = lambda a, b: a.x-b.x
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
         for light in lights:
             temp_dist = dl(light.pose.pose.position, pose.position)
-            if temp_dist> 0 and temp_dist < dist:
+            if temp_dist < dist:
                dist = temp_dist
                selected_index = index
             index = index + 1   
