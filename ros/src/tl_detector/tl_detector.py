@@ -13,7 +13,7 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 3
-LOOKAHEAD_WPS = 50
+LOOKAHEAD_WPS = 20
 
 class TLDetector(object):
     def __init__(self):
@@ -212,7 +212,7 @@ class TLDetector(object):
 
             #print(str(light_wp) + " " + str(self.car_position))						
    
-        if light and light_wp >= self.car_position and light_wp <=self.car_position+LOOKAHEAD_WPS:
+        if light and self.car_position is not None and light_wp >= self.car_position and light_wp <=self.car_position+LOOKAHEAD_WPS:
             state = self.get_light_state(light)
             #print(state)
             #state = light.state
