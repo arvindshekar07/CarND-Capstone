@@ -33,9 +33,11 @@ class WaypointUpdater(object):
 		rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 		rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 		rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+		
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 		self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+		self.car_position_pub = rospy.Publisher('car_position', Int32, queue_size=1)
 
         # TODO: Add other member variables you need below
 		self.pose = None
@@ -53,9 +55,13 @@ class WaypointUpdater(object):
 
 			if self.waypoints is not None and self.pose is not None:
 				closet_waypoint_index = self.get_closest_waypoint_index(self.waypoints.waypoints, self.pose)
+				#print("S-->" + str(closet_waypoint_index))
+				#print("C-->" + str(self.pose.position.x) + "  "  + str(self.pose.position.y))
+				#print("W-->" + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.x) + "  "  + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.y))
 				end_index = None
 				start_index = None
 				if self.tf_light_index != -1 and self.tf_light_index >= closet_waypoint_index and self.tf_light_index <=closet_waypoint_index+LOOKAHEAD_WPS:
+					#print("Traffic light is Red, preparing to stop")
 					end_index = self.tf_light_index - closet_waypoint_index
 					start_index = end_index - END_INDEX
 					if start_index < 0:
@@ -71,6 +77,7 @@ class WaypointUpdater(object):
 						waypoint.twist.twist.linear.x = 0.0
 				
 				self.final_waypoints_pub.publish(lane)
+				self.car_position_pub.publish(closet_waypoint_index)
 			
 			
 		
@@ -109,19 +116,16 @@ class WaypointUpdater(object):
 		dist = float('inf')
 		index = 0
 		selected_index = None
-		dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+		dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 		for waypoint in waypoints:
 			temp_dist = dl(waypoint.pose.pose.position, pose.position)
 			if temp_dist < dist:
 				dist = temp_dist
 				selected_index = index
 			index = index + 1
-
-		if waypoints[selected_index].pose.pose.position.x < self.pose.position.x:
-			selected_index = selected_index + 1
-	
+			
 		return selected_index
-
+		
 if __name__ == '__main__':
     try:
         WaypointUpdater()
