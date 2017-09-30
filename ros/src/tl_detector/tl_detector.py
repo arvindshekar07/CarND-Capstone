@@ -210,7 +210,7 @@ class TLDetector(object):
             #car_position = self.get_closest_waypoint(self.pose.pose, self.waypoints)			
             #car_position = self.car_position
 
-            #print(str(light_wp) + " " + str(self.car_position))						
+            print("Waypoint Index (Light):" + str(light_wp) + " (Car):" + str(self.car_position))						
    
         if light and self.car_position is not None and light_wp >= self.car_position and light_wp <=self.car_position+LOOKAHEAD_WPS:
             state = self.get_light_state(light)
@@ -230,9 +230,6 @@ class TLDetector(object):
                dist = temp_dist
                selected_index = index
             index = index + 1
-
-         #   if self.waypoints[selected_index].pose.pose.position.x < stop_line_position[0]:
-         #      selected_index = selected_index + 1
   
         return selected_index		
 

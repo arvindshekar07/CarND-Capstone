@@ -55,13 +55,13 @@ class WaypointUpdater(object):
 
 			if self.waypoints is not None and self.pose is not None:
 				closet_waypoint_index = self.get_closest_waypoint_index(self.waypoints.waypoints, self.pose)
-				#print("S-->" + str(closet_waypoint_index))
-				#print("C-->" + str(self.pose.position.x) + "  "  + str(self.pose.position.y))
-				#print("W-->" + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.x) + "  "  + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.y))
+				print("Car Way point index-->" + str(closet_waypoint_index))
+				print("Car X,Y Position-->" + str(self.pose.position.x) + "  "  + str(self.pose.position.y))
+				print("Closest Waypoint X,Y Position-->" + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.x) + "  "  + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.y))
 				end_index = None
 				start_index = None
 				if self.tf_light_index != -1 and self.tf_light_index >= closet_waypoint_index and self.tf_light_index <=closet_waypoint_index+LOOKAHEAD_WPS:
-					#print("Traffic light is Red, preparing to stop")
+					print("Traffic light is Red, preparing to stop")
 					end_index = self.tf_light_index - closet_waypoint_index
 					start_index = end_index - END_INDEX
 					if start_index < 0:
