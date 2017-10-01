@@ -71,15 +71,15 @@ class TLClassifier(object):
         #print(red_area, yellow_area, green_area)
 
         if red_area > 180:
-            print ('Approaching red light')
+            rospy.loginfo ('Approaching red light')
             return TrafficLight.RED
 
         if yellow_area > 180:
-            #print ('yellow')
+            #rospy.loginfo ('yellow')
             return TrafficLight.YELLOW
 
         if green_area > 180:
-            #print ('green')
+            #rospy.loginfo ('green')
             return TrafficLight.GREEN
 
         return TrafficLight.UNKNOWN

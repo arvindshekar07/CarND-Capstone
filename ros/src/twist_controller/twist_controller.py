@@ -26,7 +26,7 @@ class Controller(object):
         self.steer_pid.reset()		
  
         acceleration = target_velocity - current_velocity / 0.5
-        print("Current Velocity: " + str(current_velocity) + " Target Velocity: " + str(target_velocity) + " Expected Acceleration: " + str(acceleration))
+        rospy.loginfo("Current Velocity: " + str(current_velocity) + " Target Velocity: " + str(target_velocity) + " Expected Acceleration: " + str(acceleration))
         if acceleration > 0:
           acceleration = min(self.accel_limit, acceleration)
         else:

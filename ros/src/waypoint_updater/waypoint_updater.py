@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
+import numpy as np
 
 import math
 
@@ -24,7 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 SPEED = 10
-END_INDEX = 10
+STOP_WPS_BEFORE_LIGHT = 10
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -55,19 +56,26 @@ class WaypointUpdater(object):
 
 			if self.waypoints is not None and self.pose is not None:
 				closet_waypoint_index = self.get_closest_waypoint_index(self.waypoints.waypoints, self.pose)
-				print("Car Way point index-->" + str(closet_waypoint_index))
-				print("Car X,Y Position-->" + str(self.pose.position.x) + "  "  + str(self.pose.position.y))
-				print("Closest Waypoint X,Y Position-->" + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.x) + "  "  + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.y))
+				rospy.loginfo("Car Way point index-->" + str(closet_waypoint_index))
+				rospy.loginfo("Car X,Y Position-->" + str(self.pose.position.x) + "  "  + str(self.pose.position.y))
+				rospy.loginfo("Closest Waypoint X,Y Position-->" + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.x) + "  "  + str(self.waypoints.waypoints[closet_waypoint_index].pose.pose.position.y))
 				end_index = None
 				start_index = None
-				if self.tf_light_index != -1 and self.tf_light_index >= closet_waypoint_index and self.tf_light_index <=closet_waypoint_index+LOOKAHEAD_WPS:
-					print("Traffic light is Red, preparing to stop")
+				wp_length = len(self.waypoints.waypoints)
+				looked_ahead_index = closet_waypoint_index+LOOKAHEAD_WPS
+				over_flow_index = looked_ahead_index - wp_length
+
+				if self.tf_light_index != -1 and self.tf_light_index >= closet_waypoint_index and (self.tf_light_index <=looked_ahead_index or (over_flow_index>0 and  self.tf_light_index <= over_flow_index)):
+					rospy.loginfo("Traffic light is Red, preparing to stop")
 					end_index = self.tf_light_index - closet_waypoint_index
-					start_index = end_index - END_INDEX
+					start_index = end_index - STOP_WPS_BEFORE_LIGHT
 					if start_index < 0:
 						start_index = 0
 				
-				lane.waypoints = self.waypoints.waypoints[closet_waypoint_index:closet_waypoint_index+LOOKAHEAD_WPS]
+				lane.waypoints = self.waypoints.waypoints[closet_waypoint_index:looked_ahead_index]
+
+				if over_flow_index > 0:
+					lane.waypoints = np.append(lane.waypoints, self.waypoints.waypoints[0:over_flow_index])
 
 				for waypoint in lane.waypoints:
 					waypoint.twist.twist.linear.x = SPEED
@@ -75,7 +83,7 @@ class WaypointUpdater(object):
 				if end_index is not None:
 					for waypoint in lane.waypoints[start_index:end_index]:
 						waypoint.twist.twist.linear.x = 0.0
-				
+
 				self.final_waypoints_pub.publish(lane)
 				self.car_position_pub.publish(closet_waypoint_index)
 			
