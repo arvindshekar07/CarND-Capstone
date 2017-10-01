@@ -22,6 +22,12 @@ class TLClassifier(object):
         def convert_color_space(image):
             return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
+        def mask_lower_half(image):
+            image_size = np.shape(image)
+            y = image_size[0]
+            image[int(y/2):,:] = 0
+            return image
+
         def apply_color_mask(HSV_image, low, high):
             mask =  cv2.inRange(HSV_image, low, high)
             return mask, cv2.bitwise_and(image, image, mask=mask)
@@ -56,6 +62,10 @@ class TLClassifier(object):
 
         # Convert RBG to HSV
         HSV_image = convert_color_space(image)
+
+        # Mask the lower half of image
+        # Note: if the cropped image from object detection is passed in, please comment out this line.
+        HSV_image = mask_lower_half(HSV_image)
 
         # Threshold the HSV image to get only red, yellow and green colors
         # Bitwise-AND mask
