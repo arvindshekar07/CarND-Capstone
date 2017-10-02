@@ -5,8 +5,8 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 1. Mahendra Pratap Singh - kunwarmahen@gmail.com (Team Lead)
 2. Arvind Shekar - arvindrocks07@gmail.com
 3. Param Aggarwal - paramaggarwal@gmail.com
-4. Sagar Bhokre	- sagarbhokre@gmail.com
-5. Sherry Yang	yyangdundee@gmail.com
+4. Sagar Bhokre - sagarbhokre@gmail.com
+5. Sherry Yang - yyangdundee@gmail.com
 
 ### Installation 
 
